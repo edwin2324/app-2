@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMDL - Mensajería Segura Mejorada</title>
+    <style>
+        :root {
+            /* Colores modo claro (tema por defecto) */
+            --primary-color: #3a7bd5;
+            --primary-light: #00d2ff;
+            --secondary-color: #00b09b;
+            --accent-color: #4CAF50;
+            --text-color: #2D3436;
+            --bg-color: #f5f7fa;
+            --card-color: #FFFFFF;
+            --bubble-sent: #DCF8C6;
+            --bubble-received: #FFFFFF;
+            --system-color: #ECEFF1;
+            --timestamp-color: #757575;
+            --error-color: #E53935;
+            --warning-color: #FFB300;
+            --online-color: #4CAF50;
+            --typing-color: #FF9800;
+            --avatar-size: 42px;
+            --border-radius: 12px;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --gradient: linear-gradient(to right, var(--primary-color), var(--primary-light));
+        }
+
+        /* Modo oscuro */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary-color: #1e3c72;
+                --primary-light: #2a5298;
+                --text-color: #ECF0F1;
+                --bg-color: #121212;
+                --card-color: #1E1E1E;
+                --bubble-sent: #2E7D32;
+                --bubble-received: #424242;
+                --system-color: #333333;
+                --timestamp-color: #BDBDBD;
+                --gradient: linear-gradient(to right, var(--primary-color), var(--primary-light));
+            }
+        }
+
+        /* Tema profesional */
+        .theme-professional {
+            --primary-color: #2c3e50;
+            --primary-light: #3498db;
+            --secondary-color: #1abc9c;
+            --accent-color: #27ae60;
+            --text-color: #2c3e50;
+            --bg-color: #ecf0f1;
+            --bubble-sent: #d5f5e3;
+            --bubble-received: #FFFFFF;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* [Resto del CSS existente...] */
+
+        /* === NUEVOS ESTILOS PARA MEJORAS === */
+
+        /* Estilos para cifrado */
+        .encrypted-indicator {
+            font-size: 0.8em;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        /* Temas personalizables */
+        .theme-selector {
+            display: flex;
+            gap: 12px;
+            margin: 16px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .theme-option {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .theme-option:hover {
+            transform: scale(1.05);
+        }
+
+        .theme-option.selected {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .theme-preview {
+            width: 40px;
+            height: 20px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            background: linear-gradient(to right, var(--primary-color), var(--primary-light));
+        }
+
+        /* Búsqueda en chat */
+        .search-highlight {
+            background-color: rgba(255, 255, 0, 0.3);
+            transition: background-color 0.3s;
+        }
+
+        .search-match {
+            background-color: var(--warning-color);
+            color: #000;
+            padding: 0 2px;
+            border-radius: 3px;
+        }
+
+        .search-navigation {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 16px;
+            background-color: var(--card-color);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        /* Grupos */
+        .group-member-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 12px 0;
+        }
+
+        .group-member {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: var(--border-radius);
+            background-color: rgba(0,0,0,0.05);
+            margin-bottom: 8px;
+        }
+
+        .group-member-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .group-admin-badge {
+            background-color: var(--accent-color);
+            color: white;
+            font-size: 0.7em;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+
+        /* Reacciones */
+        .message-reactions {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
+
+        .reaction {
+            background-color: rgba(0,0,0,0.1);
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .reaction:hover {
+            background-color: rgba(0,0,0,0.2);
+        }
+
+        .reaction-count {
+            margin-left: 4px;
+            font-size: 0.9em;
+        }
+
+        .reaction-menu {
+            background-color: var(--card-color);
+            border-radius: var(--border-radius);
+            padding: 8px;
+            display: flex;
+            gap: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .reaction-option {
+            background: none;
+            border: none;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 50%;
+        }
+
+        .reaction-option:hover {
+            transform: scale(1.2);
+            background-color: rgba(0,0,0,0.1);
+        }
+
+        /* Mensajes editados */
+        .message-edited {
+            font-size: 0.8em;
+            color: var(--timestamp-color);
+            margin-left: 4px;
+            font-style: italic;
+        }
+
+        /* Mejoras de accesibilidad */
+        [aria-hidden="true"] {
+            display: none !important;
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        /* Animaciones mejoradas */
+        @keyframes fadeInScale {
+            0% { opacity: 0; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .message {
+            animation: fadeInScale 0.2s ease-out;
+        }
+
+        /* Efecto de carga mejorado */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(0,0,0,0.05) 25%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.05) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: var(--border-radius);
+            color: transparent !important;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Indicador de conexión segura */
+        .security-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8em;
+            color: var(--accent-color);
+            padding: 4px 8px;
+            border-radius: var(--border-radius);
+            background-color: rgba(76, 175, 80, 0.1);
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <!-- [HTML existente...] -->
+
+    <!-- Nuevos diálogos para mejoras -->
+    <div id="create-group-dialog" class="dialog" style="display: none;">
+        <h3><i class="fas fa-users"></i> Crear Grupo</h3>
+        <div class="form-group">
+            <label for="group-name">Nombre del grupo:</label>
+            <input type="text" id="group-name" placeholder="Nombre del grupo" aria-label="Nombre del grupo">
+        </div>
+        <div class="form-group">
+            <label>Miembros:</label>
+            <div class="group-member-list" id="group-members-list">
+                <!-- Lista de contactos para agregar al grupo -->
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Foto de grupo:</label>
+            <div class="avatar-upload">
+                <div class="avatar avatar-preview" id="group-avatar-preview">
+                    <span class="avatar-initial">G</span>
+                </div>
+                <input type="file" id="group-avatar-upload-input" accept="image/*" style="display: none;" aria-label="Subir foto de grupo">
+                <button class="btn btn-outline ripple" id="group-avatar-upload-btn">
+                    <i class="fas fa-camera"></i> Cambiar foto
+                </button>
+            </div>
+        </div>
+        <div class="dialog-buttons">
+            <button class="btn btn-secondary ripple" id="cancel-group-btn">Cancelar</button>
+            <button class="btn btn-primary ripple" id="create-group-btn">Crear</button>
+        </div>
+    </div>
+
+    <div id="theme-selector-dialog" class="dialog" style="display: none;">
+        <h3><i class="fas fa-palette"></i> Seleccionar Tema</h3>
+        <div class="theme-selector" id="theme-options-container">
+            <!-- Opciones de tema se llenarán dinámicamente -->
+        </div>
+        <div class="dialog-buttons">
+            <button class="btn btn-primary ripple" id="save-theme-btn">Guardar</button>
+        </div>
+    </div>
+
+    <div id="security-settings-dialog" class="dialog" style="display: none;">
+        <h3><i class="fas fa-lock"></i> Configuración de Seguridad</h3>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="encryption-toggle" checked>
+                Habilitar cifrado de extremo a extremo
+            </label>
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="self-destruct-toggle">
+                Mensajes autodestructibles
+            </label>
+            <div id="self-destruct-options" style="display: none; margin-top: 8px;">
+                <select id="self-destruct-time">
+                    <option value="300">5 minutos</option>
+                    <option value="3600">1 hora</option>
+                    <option value="86400">1 día</option>
+                    <option value="604800">1 semana</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="two-factor-toggle">
+                Autenticación de dos factores
+            </label>
+        </div>
+        <div class="dialog-buttons">
+            <button class="btn btn-primary ripple" id="save-security-btn">Guardar</button>
+        </div>
+    </div>
+
+    <script>
+        class EMDLApplication {
+            constructor() {
+                // Propiedades existentes
+                this.isMobile = this.checkIfMobile();
+                this.connected = false;
+                this.currentChat = null;
+                this.replyingTo = null;
+                this.attachedFile = null;
+                this.username = "Usuario";
+                this.userId = this.generateUserId();
+                this.avatar = this.getRandomAvatar();
+                this.contacts = {};
+                this.messages = {};
+                this.unreadMessages = {};
+                this.typingTimeout = null;
+                this.fileInput = null;
+                this.avatarOptions = this.generateAvatarOptions();
+                this.notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-positive-interface-beep-221.mp3');
+
+                // Nuevas propiedades para mejoras
+                this.cryptoKeys = {};
+                this.cryptoInitialized = false;
+                this.groups = {};
+                this.currentGroup = null;
+                this.searchResults = { currentIndex: -1, matches: [] };
+                this.availableThemes = {
+                    default: {
+                        primary: '#3a7bd5',
+                        primaryLight: '#00d2ff',
+                        secondary: '#00b09b',
+                        accent: '#4CAF50',
+                        text: '#2D3436',
+                        bg: '#f5f7fa'
+                    },
+                    dark: {
+                        primary: '#1e3c72',
+                        primaryLight: '#2a5298',
+                        text: '#ECF0F1',
+                        bg: '#121212'
+                    },
+                    professional: {
+                        primary: '#2c3e50',
+                        primaryLight: '#3498db',
+                        secondary: '#1abc9c',
+                        accent: '#27ae60',
+                        text: '#2c3e50',
+                        bg: '#ecf0f1'
+                    }
+                };
+                this.activeTheme = 'default';
+                this.notificationPermission = 'default';
+                this.messageDrafts = {};
+                this.securitySettings = {
+                    encryption: true,
+                    selfDestruct: false,
+                    selfDestructTime: 300,
+                    twoFactor: false
+                };
+
+                this.initApp();
+            }
+
+            // [Métodos existentes...]
+
+            /* === NUEVOS MÉTODOS PARA MEJORAS === */
+
+            // Sistema de cifrado
+            async initCrypto() {
+                try {
+                    if (!window.crypto || !window.crypto.subtle) {
+                        console.warn("Web Crypto API no disponible - Cifrado deshabilitado");
+                        return;
+                    }
+
+                    // Generar par de claves para el usuario
+                    const keyPair = await window.crypto.subtle.generateKey(
+                        {
+                            name: "RSA-OAEP",
+                            modulusLength: 2048,
+                            publicExponent: new Uint8Array([1, 0, 1]),
+                            hash: "SHA-256"
+                        },
+                        true,
+                        ["encrypt", "decrypt"]
+                    );
+                    
+                    this.cryptoKeys.myKeyPair = keyPair;
+                    this.cryptoInitialized = true;
+                    console.log("Sistema de cifrado inicializado");
+                } catch (error) {
+                    console.error("Error al inicializar cifrado:", error);
+                    this.cryptoInitialized = false;
+                }
+            }
+
+            async encryptMessage(text, publicKey) {
+                if (!this.cryptoInitialized || !this.securitySettings.encryption) return text;
+                
+                try {
+                    const encoded = new TextEncoder().encode(text);
+                    const encrypted = await window.crypto.subtle.encrypt(
+                        { name: "RSA-OAEP" },
+                        publicKey,
+                        encoded
+                    );
+                    
+                    return Array.from(new Uint8Array(encrypted)).join(',');
+                } catch (error) {
+                    console.error("Error al cifrar mensaje:", error);
+                    return text;
+                }
+            }
+
+            async decryptMessage(encrypted) {
+                if (!this.cryptoInitialized || typeof encrypted !== 'string' || !this.securitySettings.encryption) 
+                    return encrypted;
+                
+                try {
+                    const encryptedArray = new Uint8Array(encrypted.split(',').map(Number));
+                    const decrypted = await window.crypto.subtle.decrypt(
+                        { name: "RSA-OAEP" },
+                        this.cryptoKeys.myKeyPair.privateKey,
+                        encryptedArray
+                    );
+                    
+                    return new TextDecoder().decode(decrypted);
+                } catch (error) {
+                    console.error("Error al descifrar mensaje:", error);
+                    return "🔒 Mensaje cifrado (no se pudo descifrar)";
+                }
+            }
+
+            // Sistema de temas
+            setTheme(themeName) {
+                const theme = this.availableThemes[themeName] || this.availableThemes.default;
+                this.activeTheme = themeName;
+                
+                // Aplicar variables CSS
+                document.documentElement.style.setProperty('--primary-color', theme.primary);
+                document.documentElement.style.setProperty('--primary-light', theme.primaryLight);
+                if (theme.secondary) document.documentElement.style.setProperty('--secondary-color', theme.secondary);
+                if (theme.accent) document.documentElement.style.setProperty('--accent-color', theme.accent);
+                document.documentElement.style.setProperty('--text-color', theme.text);
+                document.documentElement.style.setProperty('--bg-color', theme.bg);
+                
+                // Aplicar clase de tema al body
+                document.body.className = themeName === 'dark' ? '' : `theme-${themeName}`;
+                
+                localStorage.setItem('emdlTheme', themeName);
+            }
+
+            showThemeSelector() {
+                const container = this.ui.themeOptionsContainer;
+                container.innerHTML = '';
+                
+                Object.keys(this.availableThemes).forEach(themeName => {
+                    const theme = this.availableThemes[themeName];
+                    const option = document.createElement('div');
+                    option.className = `theme-option ${themeName === this.activeTheme ? 'selected' : ''}`;
+                    option.dataset.theme = themeName;
+                    option.innerHTML = `
+                        <div class="theme-preview" style="background: linear-gradient(to right, ${theme.primary}, ${theme.primaryLight})"></div>
+                        <span>${themeName.charAt(0).toUpperCase() + themeName.slice(1)}</span>
+                    `;
+                    option.addEventListener('click', () => {
+                        container.querySelectorAll('.theme-option').forEach(opt => 
+                            opt.classList.remove('selected'));
+                        option.classList.add('selected');
+                    });
+                    container.appendChild(option);
+                });
+                
+                this.ui.themeSelectorDialog.style.display = 'block';
+                document.body.appendChild(this.createOverlay());
+            }
+
+            // Sistema de grupos
+            createGroup(name, members, avatar = null) {
+                const groupId = 'group-' + Math.random().toString(36).substr(2, 9);
+                
+                this.groups[groupId] = {
+                    id: groupId,
+                    name,
+                    members: [...members, this.userId], // Incluir al creador
+                    avatar: avatar || this.getRandomAvatar(),
+                    admin: this.userId,
+                    createdAt: new Date().toISOString()
+                };
+                
+                if (!this.messages[groupId]) {
+                    this.messages[groupId] = [];
+                }
+                
+                this.saveData();
+                this.updateChatsList();
+                
+                return groupId;
+            }
+
+            showCreateGroupDialog() {
+                const membersList = this.ui.groupMembersList;
+                membersList.innerHTML = '';
+                
+                Object.entries(this.contacts).forEach(([id, contact]) => {
+                    const memberItem = document.createElement('div');
+                    memberItem.className = 'group-member';
+                    memberItem.innerHTML = `
+                        <div class="group-member-avatar" style="background-color: ${contact.avatar?.color || '#3a7bd5'}">
+                            ${contact.avatar?.image ? 
+                                `<img src="${contact.avatar.image}" alt="${contact.name}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : 
+                                `<span class="avatar-initial">${contact.avatar?.initial || contact.name.charAt(0).toUpperCase()}</span>`}
+                        </div>
+                        <div>${contact.name}</div>
+                        <input type="checkbox" class="group-member-checkbox" data-id="${id}" style="margin-left: auto;">
+                    `;
+                    membersList.appendChild(memberItem);
+                });
+                
+                this.ui.groupName.value = '';
+                const randomAvatar = this.getRandomAvatar();
+                randomAvatar.initial = 'G';
+                this.updateAvatarElement(this.ui.groupAvatarPreview, randomAvatar);
+                
+                this.ui.createGroupDialog.style.display = 'block';
+                document.body.appendChild(this.createOverlay());
+            }
+
+            // Búsqueda en chat
+            searchInChat(query) {
+                if (!this.currentChat || !query) return;
+                
+                this.searchResults = {
+                    currentIndex: -1,
+                    matches: []
+                };
+                
+                const lowerQuery = query.toLowerCase();
+                const messages = this.currentGroup ? 
+                    this.messages[this.currentGroup] : 
+                    this.messages[this.currentChat];
+                
+                messages.forEach((msg, index) => {
+                    if (msg.text && msg.text.toLowerCase().includes(lowerQuery)) {
+                        this.searchResults.matches.push(index);
+                    }
+                });
+                
+                if (this.searchResults.matches.length > 0) {
+                    this.highlightSearchResult(0);
+                    this.displayMessage(`Encontradas ${this.searchResults.matches.length} coincidencias`, 'system');
+                } else {
+                    this.displayMessage('No se encontraron coincidencias', 'system');
+                }
+            }
+
+            highlightSearchResult(index) {
+                if (this.searchResults.matches.length === 0) return;
+                
+                this.searchResults.currentIndex = 
+                    (index + this.searchResults.matches.length) % this.searchResults.matches.length;
+                
+                const msgIndex = this.searchResults.matches[this.searchResults.currentIndex];
+                const messageElement = this.ui.messageArea.children[msgIndex];
+                
+                // Desmarcar cualquier resultado previo
+                this.ui.messageArea.querySelectorAll('.search-highlight').forEach(el => {
+                    el.classList.remove('search-highlight');
+                });
+                
+                // Marcar el nuevo resultado
+                messageElement.classList.add('search-highlight');
+                messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Resaltar el texto encontrado
+                const messages = this.currentGroup ? 
+                    this.messages[this.currentGroup] : 
+                    this.messages[this.currentChat];
+                const msg = messages[msgIndex];
+                const textElement = messageElement.querySelector('.message-text');
+                if (textElement) {
+                    const lowerText = msg.text.toLowerCase();
+                    const lowerQuery = this.ui.chatSearch.value.toLowerCase();
+                    const startIndex = lowerText.indexOf(lowerQuery);
+                    
+                    if (startIndex !== -1) {
+                        const before = msg.text.substring(0, startIndex);
+                        const match = msg.text.substring(startIndex, startIndex + lowerQuery.length);
+                        const after = msg.text.substring(startIndex + lowerQuery.length);
+                        
+                        textElement.innerHTML = `${before}<span class="search-match">${match}</span>${after}`;
+                    }
+                }
+            }
+
+            // Reacciones a mensajes
+            showReactionMenu(x, y, messageElement) {
+                const index = Array.from(this.ui.messageArea.children).indexOf(messageElement);
+                const messages = this.currentGroup ? 
+                    this.messages[this.currentGroup] : 
+                    this.messages[this.currentChat];
+                const message = messages[index];
+                
+                const menu = document.createElement('div');
+                menu.className = 'reaction-menu';
+                menu.style.position = 'fixed';
+                menu.style.left = `${x}px`;
+                menu.style.top = `${y}px`;
+                menu.style.zIndex = '1001';
+                
+                const reactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+                menu.innerHTML = reactions.map(r => 
+                    `<button class="reaction-option ripple">${r}</button>`
+                ).join('');
+                
+                document.body.appendChild(menu);
+                
+                // Manejar clicks en reacciones
+                menu.querySelectorAll('.reaction-option').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.addReaction(message, btn.textContent.trim());
+                        document.body.removeChild(menu);
+                    });
+                });
+                
+                // Cerrar menú al hacer click fuera
+                const closeMenu = (e) => {
+                    if (!menu.contains(e.target)) {
+                        document.body.removeChild(menu);
+                        document.removeEventListener('click', closeMenu);
+                    }
+                };
+                
+                setTimeout(() => {
+                    document.addEventListener('click', closeMenu);
+                }, 100);
+            }
+
+            addReaction(message, reaction) {
+                if (!message.reactions) {
+                    message.reactions = {};
+                }
+                
+                if (!message.reactions[reaction]) {
+                    message.reactions[reaction] = [];
+                }
+                
+                // Si ya reaccionó, quitar reacción
+                const userIndex = message.reactions[reaction].indexOf(this.userId);
+                if (userIndex !== -1) {
+                    message.reactions[reaction].splice(userIndex, 1);
+                    if (message.reactions[reaction].length === 0) {
+                        delete message.reactions[reaction];
+                    }
+                } else {
+                    message.reactions[reaction].push(this.userId);
+                }
+                
+                this.saveData();
+                this.loadChatMessages(this.currentChat || this.currentGroup);
+            }
+
+            // Configuración de seguridad
+            showSecuritySettings() {
+                this.ui.encryptionToggle.checked = this.securitySettings.encryption;
+                this.ui.selfDestructToggle.checked = this.securitySettings.selfDestruct;
+                this.ui.selfDestructTime.value = this.securitySettings.selfDestructTime;
+                this.ui.twoFactorToggle.checked = this.securitySettings.twoFactor;
+                this.ui.selfDestructOptions.style.display = 
+                    this.securitySettings.selfDestruct ? 'block' : 'none';
+                
+                this.ui.securitySettingsDialog.style.display = 'block';
+                document.body.appendChild(this.createOverlay());
+            }
+
+            saveSecuritySettings() {
+                this.securitySettings = {
+                    encryption: this.ui.encryptionToggle.checked,
+                    selfDestruct: this.ui.selfDestructToggle.checked,
+                    selfDestructTime: parseInt(this.ui.selfDestructTime.value),
+                    twoFactor: this.ui.twoFactorToggle.checked
+                };
+                
+                localStorage.setItem('emdlSecuritySettings', JSON.stringify(this.securitySettings));
+                this.displayMessage('Configuración de seguridad guardada', 'system');
+                
+                if (this.securitySettings.encryption && !this.cryptoInitialized) {
+                    this.initCrypto();
+                }
+            }
+
+            // [Resto de los métodos existentes...]
+
+            initUI() {
+                // Elementos de UI existentes...
+
+                // Nuevos elementos de UI para mejoras
+                this.ui.themeOptionsContainer = document.getElementById('theme-options-container');
+                this.ui.themeSelectorDialog = document.getElementById('theme-selector-dialog');
+                this.ui.saveThemeBtn = document.getElementById('save-theme-btn');
+                this.ui.createGroupDialog = document.getElementById('create-group-dialog');
+                this.ui.groupName = document.getElementById('group-name');
+                this.ui.groupMembersList = document.getElementById('group-members-list');
+                this.ui.groupAvatarPreview = document.getElementById('group-avatar-preview');
+                this.ui.groupAvatarUploadInput = document.getElementById('group-avatar-upload-input');
+                this.ui.groupAvatarUploadBtn = document.getElementById('group-avatar-upload-btn');
+                this.ui.createGroupBtn = document.getElementById('create-group-btn');
+                this.ui.cancelGroupBtn = document.getElementById('cancel-group-btn');
+                this.ui.securitySettingsDialog = document.getElementById('security-settings-dialog');
+                this.ui.encryptionToggle = document.getElementById('encryption-toggle');
+                this.ui.selfDestructToggle = document.getElementById('self-destruct-toggle');
+                this.ui.selfDestructOptions = document.getElementById('self-destruct-options');
+                this.ui.selfDestructTime = document.getElementById('self-destruct-time');
+                this.ui.twoFactorToggle = document.getElementById('two-factor-toggle');
+                this.ui.saveSecurityBtn = document.getElementById('save-security-btn');
+                this.ui.newGroupBtn = document.getElementById('new-group-btn');
+                this.ui.themeSettingsBtn = document.getElementById('theme-settings-btn');
+                this.ui.securitySettingsBtn = document.getElementById('security-settings-btn');
+            }
+
+            setupEventHandlers() {
+                // Handlers existentes...
+
+                // Nuevos handlers para mejoras
+                this.ui.saveThemeBtn.addEventListener('click', () => {
+                    const selectedTheme = document.querySelector('.theme-option.selected')?.dataset.theme;
+                    if (selectedTheme) {
+                        this.setTheme(selectedTheme);
+                    }
+                    this.ui.themeSelectorDialog.style.display = 'none';
+                    document.querySelector('.overlay')?.remove();
+                });
+
+                this.ui.themeSettingsBtn?.addEventListener('click', () => this.showThemeSelector());
+                this.ui.securitySettingsBtn?.addEventListener('click', () => this.showSecuritySettings());
+                this.ui.newGroupBtn?.addEventListener('click', () => this.showCreateGroupDialog());
+                
+                this.ui.createGroupBtn.addEventListener('click', () => {
+                    const name = this.ui.groupName.value.trim();
+                    if (!name) {
+                        this.displayMessage('Debes ingresar un nombre para el grupo', 'error');
+                        return;
+                    }
+                    
+                    const selectedMembers = Array.from(
+                        document.querySelectorAll('.group-member-checkbox:checked')
+                    ).map(checkbox => checkbox.dataset.id);
+                    
+                    if (selectedMembers.length === 0) {
+                        this.displayMessage('Debes seleccionar al menos un miembro', 'error');
+                        return;
+                    }
+                    
+                    // Obtener avatar del grupo
+                    const fileInput = this.ui.groupAvatarUploadInput;
+                    if (fileInput.files.length > 0) {
+                        this.updateAvatarFromFile(fileInput.files[0], 'group').then(avatar => {
+                            const groupId = this.createGroup(name, selectedMembers, avatar);
+                            this.ui.createGroupDialog.style.display = 'none';
+                            document.querySelector('.overlay')?.remove();
+                            this.onChatSelected(groupId);
+                        });
+                    } else {
+                        const groupId = this.createGroup(name, selectedMembers);
+                        this.ui.createGroupDialog.style.display = 'none';
+                        document.querySelector('.overlay')?.remove();
+                        this.onChatSelected(groupId);
+                    }
+                });
+                
+                this.ui.cancelGroupBtn.addEventListener('click', () => {
+                    this.ui.createGroupDialog.style.display = 'none';
+                    document.querySelector('.overlay')?.remove();
+                });
+                
+                this.ui.groupAvatarUploadBtn.addEventListener('click', () => {
+                    this.ui.groupAvatarUploadInput.click();
+                });
+                
+                this.ui.groupAvatarUploadInput.addEventListener('change', () => {
+                    if (this.ui.groupAvatarUploadInput.files.length > 0) {
+                        const file = this.ui.groupAvatarUploadInput.files[0];
+                        if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                this.ui.groupAvatarPreview.innerHTML = `<img src="${e.target.result}" alt="Avatar de grupo">`;
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    }
+                });
+                
+                this.ui.selfDestructToggle.addEventListener('change', () => {
+                    this.ui.selfDestructOptions.style.display = 
+                        this.ui.selfDestructToggle.checked ? 'block' : 'none';
+                });
+                
+                this.ui.saveSecurityBtn.addEventListener('click', () => {
+                    this.saveSecuritySettings();
+                    this.ui.securitySettingsDialog.style.display = 'none';
+                    document.querySelector('.overlay')?.remove();
+                });
+
+                // Doble click para responder
+                this.ui.messageArea.addEventListener('dblclick', (e) => {
+                    const messageElement = e.target.closest('.message-container');
+                    if (messageElement && (this.currentChat || this.currentGroup)) {
+                        const index = Array.from(this.ui.messageArea.children).indexOf(messageElement);
+                        const messages = this.currentGroup ? 
+                            this.messages[this.currentGroup] : 
+                            this.messages[this.currentChat];
+                        const message = messages[index];
+                        this.setupReply(message);
+                    }
+                });
+                
+                // Click derecho para reaccionar
+                this.ui.messageArea.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    const messageElement = e.target.closest('.message-container');
+                    if (messageElement && (this.currentChat || this.currentGroup)) {
+                        this.showReactionMenu(e.clientX, e.clientY, messageElement);
+                    }
+                });
+                
+                // Teclas rápidas
+                document.addEventListener('keydown', (e) => {
+                    // Ctrl+Enter para enviar
+                    if (e.ctrlKey && e.key === 'Enter') {
+                        this.sendMessage();
+                    }
+                    
+                    // Esc para cancelar respuesta/adjunto
+                    if (e.key === 'Escape') {
+                        if (this.replyingTo) this.clearReply();
+                        if (this.attachedFile) this.clearAttachment();
+                    }
+                    
+                    // Buscar en chat con Ctrl+F
+                    if (e.ctrlKey && e.key === 'f') {
+                        e.preventDefault();
+                        const search = prompt('Buscar en el chat:');
+                        if (search) this.searchInChat(search);
+                    }
+                    
+                    // Navegar resultados de búsqueda
+                    if (e.ctrlKey && e.key === 'g') {
+                        e.preventDefault();
+                        if (this.searchResults.matches.length > 0) {
+                            this.highlightSearchResult(this.searchResults.currentIndex + 1);
+                        }
+                    }
+                });
+            }
+
+            // [Resto de la implementación...]
+        }
+
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', () => {
+            const app = new EMDLApplication();
+        });
+    </script>
+</body>
+</html>
